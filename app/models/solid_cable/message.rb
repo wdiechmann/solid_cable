@@ -12,8 +12,10 @@ module SolidCable
 
     class << self
       def broadcast(channel, payload)
+        ActiveRecord::Base.connected_to(role: :writing) do
         insert({ created_at: Time.current, channel:, payload:,
           channel_hash: channel_hash_for(channel) })
+        end
       end
 
       def channel_hashes_for(channels)
