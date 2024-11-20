@@ -12,11 +12,12 @@ module SolidCable
 
     class << self
       def broadcast(channel, payload)
-        ActiveRecord::Base.connected_to(role: :writing) do
-        insert({ created_at: Time.current, channel:, payload:,
-          channel_hash: channel_hash_for(channel) })
-        end
+         using_writing_role do
+          insert({ created_at: Time.current, channel:, payload:,
+            channel_hash: channel_hash_for(channel) })
+          end
       end
+    
 
       def channel_hashes_for(channels)
         channels.map { |channel| channel_hash_for(channel) }
@@ -27,6 +28,15 @@ module SolidCable
       def channel_hash_for(channel)
         Digest::SHA256.digest(channel.to_s).unpack1("q>")
       end
+ private
+
+      def using_writing_role
+        if SolidCable.connects_to.present?
+          ActiveRecord::Base.connected_to(role: :writing) { yield }
+        else
+          yield
+        end
+      end      
     end
   end
 end
